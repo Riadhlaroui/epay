@@ -26,6 +26,7 @@ import {
 	HelpCircle,
 	Settings,
 } from "lucide-react";
+import { ProfileDropDownMenu } from "../ProfileDropDownMenu";
 
 interface DashboardSidebarProps {
 	activePage: string;
@@ -79,9 +80,6 @@ export function DashboardSidebar({
 							Epay
 						</span>
 					</DropdownMenu>
-					<Avatar className="size-8 border-2 border-sidebar shrink-0">
-						<AvatarFallback>LN</AvatarFallback>
-					</Avatar>
 				</div>
 			</SidebarHeader>
 
@@ -113,7 +111,9 @@ export function DashboardSidebar({
 				</SidebarGroup>
 			</SidebarContent>
 
-			<SidebarFooter className="px-2 pb-3 group-data-[collapsible=icon]:hidden"></SidebarFooter>
+			<SidebarFooter className="px-2 pb-3 minh-15 group-data-[collapsible=icon]:hidden">
+				<ProfileDropDownMenu isCollapsed={false} />
+			</SidebarFooter>
 		</Sidebar>
 	);
 }

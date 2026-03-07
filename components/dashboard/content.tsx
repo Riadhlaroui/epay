@@ -9,8 +9,7 @@ import { PerformanceChart } from "./performance-chart";
 import { ProjectsTable } from "./projects-table";
 
 function WelcomeSection() {
-	const { userName, tasksDueToday, overdueTasks, upcomingDeadlines } =
-		welcomeSummary;
+	const { userName } = welcomeSummary;
 
 	return (
 		<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -18,23 +17,6 @@ function WelcomeSection() {
 				<h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
 					Welcome Back, {userName}! 👋
 				</h1>
-				<p className="text-sm text-muted-foreground mt-0.5">
-					{tasksDueToday} Tasks Due Today, {overdueTasks} Overdue Tasks,{" "}
-					{upcomingDeadlines} Upcoming Deadlines (This Week)
-				</p>
-			</div>
-			<div className="flex items-center gap-2">
-				<Button variant="outline" size="sm" className="h-9 gap-1.5">
-					<Download className="size-4" />
-					Export
-				</Button>
-				<Button
-					size="sm"
-					className="h-9 gap-1.5 bg-primary hover:bg-primary/90"
-				>
-					<Plus className="size-4" />
-					New
-				</Button>
 			</div>
 		</div>
 	);
