@@ -28,6 +28,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { log } from "console";
+import { logOut } from "@/app/services/userService";
 
 interface User {
 	id: string;
@@ -52,7 +54,7 @@ export function ProfileDropDownMenu({ isCollapsed }: { isCollapsed: boolean }) {
 	};
 
 	const handleLogout = () => {
-		console.log("User logged out.");
+		logOut();
 		router.push("/");
 		setShowLogoutDialog(false);
 	};
@@ -99,7 +101,7 @@ export function ProfileDropDownMenu({ isCollapsed }: { isCollapsed: boolean }) {
 				</DropdownMenuTrigger>
 
 				<DropdownMenuContent
-					className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+					className="w-[--radix-dropdown-menu-trigger-width] min-w-60 rounded-lg"
 					side={isCollapsed ? "right" : "bottom"}
 					sideOffset={8}
 				>
