@@ -6,9 +6,6 @@ import {
 	User as UserIcon,
 	User2,
 	Users,
-	UserRoundPlus,
-	UserRoundX,
-	ChevronRight,
 	MoreVertical,
 } from "lucide-react";
 
@@ -18,17 +15,11 @@ import {
 	DropdownMenuContent,
 	DropdownMenuGroup,
 	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuPortal,
 	DropdownMenuSeparator,
-	DropdownMenuSub,
-	DropdownMenuSubContent,
-	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { log } from "console";
 import { logOut } from "@/app/services/userService";
 
 interface User {
@@ -139,20 +130,6 @@ export function ProfileDropDownMenu({ isCollapsed }: { isCollapsed: boolean }) {
 							<span>Settings</span>
 						</DropdownMenuItem>
 					</DropdownMenuGroup>
-
-					<DropdownMenuSeparator />
-
-					{user?.role !== "staff" && (
-						<DropdownMenuGroup>
-							<DropdownMenuItem
-								className="gap-2 cursor-pointer"
-								onClick={() => router.replace("/team")}
-							>
-								<Users className="size-4 text-muted-foreground" />
-								<span>Team</span>
-							</DropdownMenuItem>
-						</DropdownMenuGroup>
-					)}
 
 					<DropdownMenuSeparator />
 
