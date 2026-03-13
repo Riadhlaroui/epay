@@ -12,13 +12,8 @@ import {
 	SidebarMenuItem,
 	SidebarFooter,
 } from "@/components/ui/sidebar";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { DropdownMenu } from "@/components/ui/dropdown-menu";
 import {
-	DropdownMenu,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-	ChevronDown,
 	LayoutDashboard,
 	QrCode,
 	Plus,
@@ -72,7 +67,7 @@ export function DashboardSidebar({
 	setActivePage,
 }: DashboardSidebarProps) {
 	return (
-		<Sidebar collapsible="offcanvas" className="!border-r-0">
+		<Sidebar collapsible="icon" className="border-r-0!">
 			<SidebarHeader className="px-3 py-4">
 				<div className="flex items-center justify-between w-full">
 					<DropdownMenu>
@@ -111,8 +106,14 @@ export function DashboardSidebar({
 				</SidebarGroup>
 			</SidebarContent>
 
-			<SidebarFooter className="px-2 pb-3 minh-15 group-data-[collapsible=icon]:hidden">
-				<ProfileDropDownMenu isCollapsed={false} />
+			<SidebarFooter className="px-2 pb-3 items-center justify-center flex">
+				<div className="group-data-[collapsible=icon]:hidden">
+					<ProfileDropDownMenu isCollapsed={false} />
+				</div>
+
+				<div className="hidden group-data-[collapsible=icon]:flex justify-center">
+					<ProfileDropDownMenu isCollapsed={true} />
+				</div>
 			</SidebarFooter>
 		</Sidebar>
 	);

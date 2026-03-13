@@ -60,18 +60,21 @@ export function ProfileDropDownMenu({ isCollapsed }: { isCollapsed: boolean }) {
 				<DropdownMenuTrigger asChild>
 					<Button
 						variant="ghost"
-						className={`w-full h-auto p-2 flex items-center shadow-sm gap-3 justify-start transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${
-							isCollapsed ? "justify-center px-2 border-none" : "border"
+						className={`transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${
+							isCollapsed
+								? "h-9 w-9 p-0 rounded-full flex items-center justify-center"
+								: "w-full h-auto p-2 flex items-center shadow-sm gap-3 justify-start border"
 						}`}
 					>
+						{/* Avatar */}
 						<div
-							className={`relative flex h-8 w-8 shrink-0 overflow-hidden rounded-full items-center justify-center bg-muted ${
-								isCollapsed ? "border-none h-fit w-fit" : "border border-border"
+							className={`relative flex shrink-0 overflow-hidden rounded-full items-center justify-center bg-primary/10 text-primary font-semibold ${
+								isCollapsed
+									? "h-8 w-8 text-sm"
+									: "h-8 w-8 text-sm border border-border"
 							}`}
 						>
-							<span className="font-medium text-sm">
-								{initials || <User2 className="h-4 w-4" />}
-							</span>
+							{initials || <User2 className="h-4 w-4" />}
 						</div>
 
 						{!isCollapsed && (
@@ -92,8 +95,9 @@ export function ProfileDropDownMenu({ isCollapsed }: { isCollapsed: boolean }) {
 				</DropdownMenuTrigger>
 
 				<DropdownMenuContent
-					className="w-[--radix-dropdown-menu-trigger-width] min-w-60 rounded-lg"
+					className="min-w-fit rounded-lg"
 					side={isCollapsed ? "right" : "bottom"}
+					align={isCollapsed ? "end" : "start"}
 					sideOffset={8}
 				>
 					<div className="flex items-center gap-2 p-2">
