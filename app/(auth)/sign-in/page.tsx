@@ -4,8 +4,15 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { SignIn } from "@/app/services/authService";
 import pb from "@/app/infrastructure/pocketbase/client";
-import { Button } from "@/components/ui/button";
 import { Eye, EyeOff } from "lucide-react";
+
+import { Cormorant_Garamond } from "next/font/google";
+
+const cormorant = Cormorant_Garamond({
+	subsets: ["latin"],
+	weight: "400",
+	style: "italic",
+});
 
 export default function SignInPage() {
 	const [email, setEmail] = useState("");
@@ -49,13 +56,13 @@ export default function SignInPage() {
 
 	return (
 		<div className="flex min-h-screen items-center justify-center bg-[#0a0a0a] p-6">
-			{/* OUTER TRACK: Dark frame with large rounded corners */}
 			<div className="w-full max-w-lg rounded-[2.5rem] border border-[#1f1f1f] bg-[#111111] p-3 shadow-2xl">
-				{/* INNER CONTENT: The actual form card */}
 				<div className="rounded-[2rem] border border-[#2a2a2a] bg-[#141414] p-10 shadow-inner">
 					{/* Header */}
 					<div className="mb-10 text-center">
-						<h2 className="text-3xl font-bold tracking-tight text-white">
+						<h2
+							className={`${cormorant.className} text-4xl tracking-tight text-white`}
+						>
 							Welcome Back
 						</h2>
 						<p className="mt-3 text-sm text-[#9b9b9b]">
@@ -75,7 +82,7 @@ export default function SignInPage() {
 							{/* Email Field */}
 							<div className="space-y-2">
 								<label className="text-sm font-medium text-[#9b9b9b] ml-1">
-									Email address
+									Email
 								</label>
 								<input
 									type="email"
@@ -98,7 +105,8 @@ export default function SignInPage() {
 										required
 										value={password}
 										onChange={(e) => setPassword(e.target.value)}
-										className="block h-12 w-full rounded-xl border border-[#2a2a2a] bg-[#0d0d0d] px-4 text-white focus:outline-none focus:ring-1 focus:ring-[#201f1f] transition-all"
+										className="block h-12 w-full rounded-xl border border-[#2a2a2a] bg-[#0d0d0d] placeholder:text-[#444]  px-4 text-white focus:outline-none focus:ring-1 focus:ring-[#201f1f] transition-all"
+										placeholder="Enter your password"
 									/>
 									<button
 										type="button"
@@ -116,7 +124,7 @@ export default function SignInPage() {
 						<button
 							type="submit"
 							disabled={isLoading}
-							className="mt-4 w-full h-12 rounded-xl bg-[#f5f5f7] text-sm font-semibold text-black transition-all hover:bg-white active:scale-[0.98] disabled:opacity-50"
+							className={`text-lg mt-2 w-full h-12 rounded-xl bg-[#f5f5f7] font-semibold text-black transition-all hover:bg-white active:scale-[0.98] disabled:opacity-50`}
 						>
 							{isLoading ? "Signing in..." : "Sign in"}
 						</button>
