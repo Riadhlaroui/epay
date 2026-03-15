@@ -5,7 +5,6 @@ import {
 	Settings,
 	User as UserIcon,
 	User2,
-	Users,
 	MoreVertical,
 } from "lucide-react";
 
@@ -18,31 +17,35 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { logOut } from "@/app/services/userService";
-
-interface User {
-	id: string;
-	firstName: string;
-	lastName: string;
-	email: string;
-	role: "admin" | "staff" | "user";
-}
+import { getCurrentUser, logOut } from "@/app/services/userService";
 
 export function ProfileDropDownMenu({ isCollapsed }: { isCollapsed: boolean }) {
 	const router = useRouter();
 
 	const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
-	// Mock user data - replace with actual user data from your auth system
-	const user = {
-		id: "1",
-		firstName: "John",
-		lastName: "Doe",
-		email: "john.doe@example.com",
-		role: "admin",
-	};
+	const [user, setUser] = useState({
+		FullName: "",
+		email: "",
+	});
+
+	useEffect(() => {
+		const fetchUser = async () => {
+			try {
+				const data = await getCurrentUser();
+				setUser({
+					FullName: data.FullName || "",
+					email: data.email || "",
+				});
+			} catch (err) {
+				console.error("Failed to fetch user info:", err);
+			}
+		};
+
+		fetchUser();
+	}, []);
 
 	const handleLogout = () => {
 		logOut();
@@ -51,8 +54,11 @@ export function ProfileDropDownMenu({ isCollapsed }: { isCollapsed: boolean }) {
 	};
 
 	// Helper to get initials
-	const initials =
-		`${user.firstName?.charAt(0) || ""}${user.lastName?.charAt(0) || ""}`.toUpperCase();
+	const initials = user.FullName.split(" ")
+		.map((n) => n.charAt(0))
+		.join("")
+		.toUpperCase()
+		.slice(0, 2);
 
 	return (
 		<>
@@ -78,9 +84,9 @@ export function ProfileDropDownMenu({ isCollapsed }: { isCollapsed: boolean }) {
 						</div>
 
 						{!isCollapsed && (
-							<div className="flex flex-col items-start text-sm leading-tight max-w-37.5">
+							<div className="flex flex-col min-w-35 items-start text-sm leading-tight">
 								<span className="font-semibold truncate w-full">
-									{user.firstName} {user.lastName}
+									{user.FullName}
 								</span>
 								<span className="text-xs text-muted-foreground truncate w-full">
 									{user.email}
@@ -95,7 +101,7 @@ export function ProfileDropDownMenu({ isCollapsed }: { isCollapsed: boolean }) {
 				</DropdownMenuTrigger>
 
 				<DropdownMenuContent
-					className="min-w-fit rounded-lg"
+					className="min-w-60! rounded-lg"
 					side={isCollapsed ? "right" : "bottom"}
 					align={isCollapsed ? "end" : "start"}
 					sideOffset={8}
@@ -107,9 +113,7 @@ export function ProfileDropDownMenu({ isCollapsed }: { isCollapsed: boolean }) {
 							</span>
 						</div>
 						<div className="flex flex-col space-y-0.5 leading-none">
-							<p className="font-semibold text-sm">
-								{user.firstName} {user.lastName}
-							</p>
+							<p className="font-semibold text-sm">{user.FullName}</p>
 							<p className="text-xs text-muted-foreground truncate w-40">
 								{user.email}
 							</p>

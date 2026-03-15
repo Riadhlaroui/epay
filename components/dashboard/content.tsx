@@ -1,12 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Download, Plus } from "lucide-react";
 import { welcomeSummary } from "@/mock-data/dashboard";
-import { StatsCards } from "./stats-cards";
-import { TodaysTasks } from "./todays-tasks";
-import { PerformanceChart } from "./performance-chart";
-import { ProjectsTable } from "./projects-table";
 
 function WelcomeSection() {
 	const { userName } = welcomeSummary;

@@ -3,11 +3,9 @@
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Folder, Share2 } from "lucide-react";
+import { Folder } from "lucide-react";
 import Link from "next/link";
 import { Github } from "lucide-react";
-import { lastUpdated } from "@/mock-data/dashboard";
 
 export function DashboardHeader() {
 	return (

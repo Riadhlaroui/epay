@@ -2,11 +2,17 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { SignIn, SignInWithGoogle } from "@/app/services/authService";
+import {
+	SignIn,
+	SignUp,
+	SignInWithGoogle,
+	SetupGoogleUserPassword,
+} from "@/app/services/authService";
 import pb from "@/app/infrastructure/pocketbase/client";
 import { Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
 import { Cormorant_Garamond } from "next/font/google";
 import { checkEmailExists } from "@/app/services/authService";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const cormorant = Cormorant_Garamond({
 	subsets: ["latin"],
@@ -14,7 +20,7 @@ const cormorant = Cormorant_Garamond({
 	style: "italic",
 });
 
-type Step = "initial" | "signin" | "signup";
+type Step = "initial" | "signin" | "signup" | "setup";
 
 export default function SignInPage() {
 	const [step, setStep] = useState<Step>("initial");
@@ -24,6 +30,8 @@ export default function SignInPage() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState("");
 	const [showPassword, setShowPassword] = useState(false);
+	const [confirmPassword, setConfirmPassword] = useState("");
+	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
 	const router = useRouter();
 
@@ -41,9 +49,24 @@ export default function SignInPage() {
 	const handleGoogleLogin = async () => {
 		setIsLoading(true);
 		try {
-			await SignInWithGoogle();
-			exportCookieAndRedirect();
+			const authData = await SignInWithGoogle();
+
+			if (authData.meta?.isNew) {
+				setStep("setup");
+			} else {
+				exportCookieAndRedirect();
+			}
 		} catch (err) {
+			// Silently ignore popup closed errors
+			const message = err instanceof Error ? err.message : String(err);
+			if (
+				message.includes("popup") ||
+				message.includes("closed") ||
+				message.includes("cancelled") ||
+				message.includes("canceled")
+			) {
+				return;
+			}
 			setError("Google sign-in failed. Please try again.");
 			console.error(err);
 		} finally {
@@ -57,6 +80,7 @@ export default function SignInPage() {
 		setError("");
 		try {
 			const exists = await checkEmailExists(email);
+			console.log("Email exists:", exists);
 			setStep(exists ? "signin" : "signup");
 		} catch (err) {
 			setError("Something went wrong. Please try again.");
@@ -83,16 +107,36 @@ export default function SignInPage() {
 
 	const handleSignUp = async (e: React.FormEvent) => {
 		e.preventDefault();
+		if (password !== confirmPassword) {
+			setError("Passwords do not match.");
+			return;
+		}
 		setIsLoading(true);
 		setError("");
 		try {
-			await pb
-				.collection("users")
-				.create({ email, password, passwordConfirm: password, name });
-			await SignIn(email, password);
+			await SignUp(email, password, name);
 			exportCookieAndRedirect();
 		} catch (err) {
 			setError("Could not create account. Please try again.");
+			console.error(err);
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	const handleSetupPassword = async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (password !== confirmPassword) {
+			setError("Passwords do not match.");
+			return;
+		}
+		setIsLoading(true);
+		setError("");
+		try {
+			await SetupGoogleUserPassword(password);
+			exportCookieAndRedirect();
+		} catch (err) {
+			setError("Could not set password. Please try again.");
 			console.error(err);
 		} finally {
 			setIsLoading(false);
@@ -106,12 +150,20 @@ export default function SignInPage() {
 			title: "Create Account",
 			subtitle: `Setting up account for ${email}`,
 		},
+		setup: {
+			title: "One Last Step",
+			subtitle: "Set a password for your account",
+		},
 	};
 
 	return (
-		<div className="flex min-h-screen items-center justify-center bg-[#0a0a0a] p-6">
-			<div className="w-full max-w-lg rounded-[2.5rem] border border-[#1f1f1f] bg-[#111111] p-3 shadow-2xl">
-				<div className="rounded-[2rem] border border-[#2a2a2a] bg-[#141414] p-10 shadow-inner">
+		<div className="relative flex min-h-screen items-center justify-center bg-[#f5f5f7] dark:bg-[#0a0a0a] p-6">
+			<div className="absolute top-4 right-4">
+				<ThemeToggle />
+			</div>
+
+			<div className="w-full max-w-lg rounded-[2.5rem] border border-[#d1d1d6] dark:border-[#1f1f1f] bg-white dark:bg-[#111111] p-3 shadow-2xl">
+				<div className="rounded-[2rem] border border-[#e5e5ea] dark:border-[#2a2a2a] bg-[#fafafa] dark:bg-[#141414] p-10 shadow-inner">
 					{/* Back button */}
 					{step !== "initial" && (
 						<button
@@ -120,8 +172,9 @@ export default function SignInPage() {
 								setStep("initial");
 								setError("");
 								setPassword("");
+								setConfirmPassword("");
 							}}
-							className="mb-6 flex items-center gap-1.5 text-sm text-[#9b9b9b] hover:text-white transition-colors"
+							className="mb-6 flex items-center gap-1.5 text-sm text-[#6b6b6b] dark:text-[#9b9b9b] hover:text-black dark:hover:text-white transition-colors"
 						>
 							<ArrowLeft size={15} />
 							Back
@@ -131,17 +184,17 @@ export default function SignInPage() {
 					{/* Header */}
 					<div className="mb-10 text-center">
 						<h2
-							className={`${cormorant.className} text-4xl tracking-tight text-white`}
+							className={`${cormorant.className} text-4xl tracking-tight text-black dark:text-white`}
 						>
 							{headings[step].title}
 						</h2>
-						<p className="mt-3 text-sm text-[#9b9b9b]">
+						<p className="mt-3 text-sm text-[#6b6b6b] dark:text-[#9b9b9b]">
 							{headings[step].subtitle}
 						</p>
 					</div>
 
 					{error && (
-						<div className="mb-6 rounded-xl bg-red-500/10 border border-red-500/20 p-4 text-sm text-red-400">
+						<div className="mb-6 rounded-xl bg-red-500/10 border border-red-500/20 p-4 text-sm text-red-500 dark:text-red-400">
 							{error}
 						</div>
 					)}
@@ -153,7 +206,7 @@ export default function SignInPage() {
 								type="button"
 								onClick={handleGoogleLogin}
 								disabled={isLoading}
-								className="w-full h-12 rounded-xl border border-[#2a2a2a] bg-[#0d0d0d] text-white font-medium text-base flex items-center justify-center gap-3 hover:bg-[#1a1a1a] transition-all active:scale-[0.98] disabled:opacity-50"
+								className="w-full h-12 rounded-xl border border-[#d1d1d6] dark:border-[#2a2a2a] bg-white dark:bg-[#0d0d0d] text-black dark:text-white font-medium text-base flex items-center justify-center gap-3 hover:bg-[#f5f5f7] dark:hover:bg-[#1a1a1a] transition-all active:scale-[0.98] disabled:opacity-50"
 							>
 								{isLoading ? (
 									<Loader2 className="h-5 w-5 animate-spin" />
@@ -185,9 +238,11 @@ export default function SignInPage() {
 							</button>
 
 							<div className="flex items-center gap-3">
-								<div className="flex-1 h-px bg-[#2a2a2a]" />
-								<span className="text-base text-[#f5f5f5]">or</span>
-								<div className="flex-1 h-px bg-[#2a2a2a]" />
+								<div className="flex-1 h-px bg-[#d1d1d6] dark:bg-[#2a2a2a]" />
+								<span className="text-base text-[#6b6b6b] dark:text-[#f5f5f5]">
+									or
+								</span>
+								<div className="flex-1 h-px bg-[#d1d1d6] dark:bg-[#2a2a2a]" />
 							</div>
 
 							<form onSubmit={handleEmailContinue} className="space-y-4">
@@ -197,12 +252,12 @@ export default function SignInPage() {
 									value={email}
 									onChange={(e) => setEmail(e.target.value)}
 									placeholder="Enter your email"
-									className="block h-12 w-full rounded-xl border border-[#2a2a2a] bg-[#0d0d0d] px-4 text-white placeholder:text-[#444] focus:outline-none focus:ring-1 focus:ring-[#201f1f] transition-all"
+									className="block h-12 w-full rounded-xl border border-[#d1d1d6] dark:border-[#2a2a2a] bg-white dark:bg-[#0d0d0d] px-4 text-black dark:text-white placeholder:text-[#aaa] dark:placeholder:text-[#444] focus:outline-none focus:ring-1 focus:ring-[#c0c0c0] dark:focus:ring-[#201f1f] transition-all"
 								/>
 								<button
 									type="submit"
 									disabled={isLoading}
-									className="text-lg w-full h-12 rounded-xl bg-[#f5f5f7] font-semibold text-black transition-all hover:bg-white active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+									className="text-base w-full h-12 rounded-xl bg-[#111] dark:bg-[#f5f5f7] font-semibold text-white dark:text-black transition-all hover:bg-[#333] dark:hover:bg-white active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
 								>
 									{isLoading ? "Checking..." : "Continue with email"}
 									{isLoading && <Loader2 className="h-5 w-5 animate-spin" />}
@@ -215,7 +270,7 @@ export default function SignInPage() {
 					{step === "signin" && (
 						<form onSubmit={handleSignIn} className="space-y-5">
 							<div className="space-y-2">
-								<label className="text-sm font-medium text-[#9b9b9b] ml-1">
+								<label className="text-sm font-medium text-[#6b6b6b] dark:text-[#9b9b9b] ml-1">
 									Password
 								</label>
 								<div className="relative">
@@ -225,13 +280,13 @@ export default function SignInPage() {
 										value={password}
 										onChange={(e) => setPassword(e.target.value)}
 										placeholder="Enter your password"
-										className="block h-12 w-full rounded-xl border border-[#2a2a2a] bg-[#0d0d0d] px-4 text-white placeholder:text-[#444] focus:outline-none focus:ring-1 focus:ring-[#201f1f] transition-all"
+										className="block h-12 w-full rounded-xl border border-[#d1d1d6] dark:border-[#2a2a2a] bg-white dark:bg-[#0d0d0d] px-4 text-black dark:text-white placeholder:text-[#aaa] dark:placeholder:text-[#444] focus:outline-none focus:ring-1 focus:ring-[#c0c0c0] dark:focus:ring-[#201f1f] transition-all"
 										autoFocus
 									/>
 									<button
 										type="button"
 										onClick={() => setShowPassword((p) => !p)}
-										className="absolute inset-y-0 right-0 flex items-center px-4 text-[#555] hover:text-[#9b9b9b]"
+										className="absolute inset-y-0 right-0 flex items-center px-4 text-[#aaa] dark:text-[#555] hover:text-black dark:hover:text-[#9b9b9b]"
 										tabIndex={-1}
 									>
 										{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -241,7 +296,7 @@ export default function SignInPage() {
 							<button
 								type="submit"
 								disabled={isLoading}
-								className="text-lg w-full h-12 rounded-xl bg-[#f5f5f7] font-semibold text-black transition-all hover:bg-white active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+								className="text-lg w-full h-12 rounded-xl bg-[#111] dark:bg-[#f5f5f7] font-semibold text-white dark:text-black transition-all hover:bg-[#333] dark:hover:bg-white active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
 							>
 								{isLoading ? "Signing in..." : "Sign in"}
 								{isLoading && <Loader2 className="h-5 w-5 animate-spin" />}
@@ -253,7 +308,7 @@ export default function SignInPage() {
 					{step === "signup" && (
 						<form onSubmit={handleSignUp} className="space-y-5">
 							<div className="space-y-2">
-								<label className="text-sm font-medium text-[#9b9b9b] ml-1">
+								<label className="text-sm font-medium text-[#6b6b6b] dark:text-[#9b9b9b] ml-1">
 									Full Name
 								</label>
 								<input
@@ -262,12 +317,12 @@ export default function SignInPage() {
 									value={name}
 									onChange={(e) => setName(e.target.value)}
 									placeholder="Your name"
-									className="block h-12 w-full rounded-xl border border-[#2a2a2a] bg-[#0d0d0d] px-4 text-white placeholder:text-[#444] focus:outline-none focus:ring-1 focus:ring-[#201f1f] transition-all"
+									className="block h-12 w-full rounded-xl border border-[#d1d1d6] dark:border-[#2a2a2a] bg-white dark:bg-[#0d0d0d] px-4 text-black dark:text-white placeholder:text-[#aaa] dark:placeholder:text-[#444] focus:outline-none focus:ring-1 focus:ring-[#c0c0c0] dark:focus:ring-[#201f1f] transition-all"
 									autoFocus
 								/>
 							</div>
 							<div className="space-y-2">
-								<label className="text-sm font-medium text-[#9b9b9b] ml-1">
+								<label className="text-sm font-medium text-[#6b6b6b] dark:text-[#9b9b9b] ml-1">
 									Password
 								</label>
 								<div className="relative">
@@ -277,22 +332,50 @@ export default function SignInPage() {
 										value={password}
 										onChange={(e) => setPassword(e.target.value)}
 										placeholder="Create a password"
-										className="block h-12 w-full rounded-xl border border-[#2a2a2a] bg-[#0d0d0d] px-4 text-white placeholder:text-[#444] focus:outline-none focus:ring-1 focus:ring-[#201f1f] transition-all"
+										className="block h-12 w-full rounded-xl border border-[#d1d1d6] dark:border-[#2a2a2a] bg-white dark:bg-[#0d0d0d] px-4 text-black dark:text-white placeholder:text-[#aaa] dark:placeholder:text-[#444] focus:outline-none focus:ring-1 focus:ring-[#c0c0c0] dark:focus:ring-[#201f1f] transition-all"
 									/>
 									<button
 										type="button"
 										onClick={() => setShowPassword((p) => !p)}
-										className="absolute inset-y-0 right-0 flex items-center px-4 text-[#555] hover:text-[#9b9b9b]"
+										className="absolute inset-y-0 right-0 flex items-center px-4 text-[#aaa] dark:text-[#555] hover:text-black dark:hover:text-[#9b9b9b]"
 										tabIndex={-1}
 									>
 										{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
 									</button>
 								</div>
 							</div>
+
+							<div className="space-y-2">
+								<label className="text-sm font-medium text-[#6b6b6b] dark:text-[#9b9b9b] ml-1">
+									Confirm Password
+								</label>
+								<div className="relative">
+									<input
+										type={showConfirmPassword ? "text" : "password"}
+										required
+										value={confirmPassword}
+										onChange={(e) => setConfirmPassword(e.target.value)}
+										placeholder="Confirm your password"
+										className="block h-12 w-full rounded-xl border border-[#d1d1d6] dark:border-[#2a2a2a] bg-white dark:bg-[#0d0d0d] px-4 text-black dark:text-white placeholder:text-[#aaa] dark:placeholder:text-[#444] focus:outline-none focus:ring-1 focus:ring-[#c0c0c0] dark:focus:ring-[#201f1f] transition-all"
+									/>
+									<button
+										type="button"
+										onClick={() => setShowConfirmPassword((p) => !p)}
+										className="absolute inset-y-0 right-0 flex items-center px-4 text-[#aaa] dark:text-[#555] hover:text-black dark:hover:text-[#9b9b9b]"
+										tabIndex={-1}
+									>
+										{showConfirmPassword ? (
+											<EyeOff size={18} />
+										) : (
+											<Eye size={18} />
+										)}
+									</button>
+								</div>
+							</div>
 							<button
 								type="submit"
 								disabled={isLoading}
-								className="text-lg w-full h-12 rounded-xl bg-[#f5f5f7] font-semibold text-black transition-all hover:bg-white active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+								className="text-lg w-full h-12 rounded-xl bg-[#111] dark:bg-[#f5f5f7] font-semibold text-white dark:text-black transition-all hover:bg-[#333] dark:hover:bg-white active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
 							>
 								{isLoading ? "Creating account..." : "Create account"}
 								{isLoading && <Loader2 className="h-5 w-5 animate-spin" />}
@@ -300,9 +383,80 @@ export default function SignInPage() {
 						</form>
 					)}
 
+					{/* Step 3 — Setup Password (Google new users) */}
+					{step === "setup" && (
+						<form onSubmit={handleSetupPassword} className="space-y-5">
+							<div className="space-y-2">
+								<label className="text-sm font-medium text-[#6b6b6b] dark:text-[#9b9b9b] ml-1">
+									Password
+								</label>
+								<div className="relative">
+									<input
+										type={showPassword ? "text" : "password"}
+										required
+										value={password}
+										onChange={(e) => setPassword(e.target.value)}
+										placeholder="Create a password"
+										className="block h-12 w-full rounded-xl border border-[#d1d1d6] dark:border-[#2a2a2a] bg-white dark:bg-[#0d0d0d] px-4 text-black dark:text-white placeholder:text-[#aaa] dark:placeholder:text-[#444] focus:outline-none focus:ring-1 focus:ring-[#c0c0c0] dark:focus:ring-[#201f1f] transition-all"
+										autoFocus
+									/>
+									<button
+										type="button"
+										onClick={() => setShowPassword((p) => !p)}
+										className="absolute inset-y-0 right-0 flex items-center px-4 text-[#aaa] dark:text-[#555] hover:text-black dark:hover:text-[#9b9b9b]"
+										tabIndex={-1}
+									>
+										{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+									</button>
+								</div>
+							</div>
+							<div className="space-y-2">
+								<label className="text-sm font-medium text-[#6b6b6b] dark:text-[#9b9b9b] ml-1">
+									Confirm Password
+								</label>
+								<div className="relative">
+									<input
+										type={showConfirmPassword ? "text" : "password"}
+										required
+										value={confirmPassword}
+										onChange={(e) => setConfirmPassword(e.target.value)}
+										placeholder="Confirm your password"
+										className="block h-12 w-full rounded-xl border border-[#d1d1d6] dark:border-[#2a2a2a] bg-white dark:bg-[#0d0d0d] px-4 text-black dark:text-white placeholder:text-[#aaa] dark:placeholder:text-[#444] focus:outline-none focus:ring-1 focus:ring-[#c0c0c0] dark:focus:ring-[#201f1f] transition-all"
+									/>
+									<button
+										type="button"
+										onClick={() => setShowConfirmPassword((p) => !p)}
+										className="absolute inset-y-0 right-0 flex items-center px-4 text-[#aaa] dark:text-[#555] hover:text-black dark:hover:text-[#9b9b9b]"
+										tabIndex={-1}
+									>
+										{showConfirmPassword ? (
+											<EyeOff size={18} />
+										) : (
+											<Eye size={18} />
+										)}
+									</button>
+								</div>
+							</div>
+
+							<p className="text-xs text-[#6b6b6b] dark:text-[#9b9b9b]">
+								This lets you sign in with your email and password in addition
+								to Google.
+							</p>
+
+							<button
+								type="submit"
+								disabled={isLoading}
+								className="text-lg w-full h-12 rounded-xl bg-[#111] dark:bg-[#f5f5f7] font-semibold text-white dark:text-black transition-all hover:bg-[#333] dark:hover:bg-white active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+							>
+								{isLoading ? "Saving..." : "Set password & continue"}
+								{isLoading && <Loader2 className="h-5 w-5 animate-spin" />}
+							</button>
+						</form>
+					)}
+
 					{/* Footer */}
-					<div className="mt-8 pt-6 border-t w-full border-[#2a2a2a] text-center text-sm">
-						<span className="text-[#9b9b9b]">
+					<div className="mt-8 pt-6 border-t w-full border-[#e5e5ea] dark:border-[#2a2a2a] text-center text-sm">
+						<span className="text-[#6b6b6b] dark:text-[#9b9b9b]">
 							{step === "signup"
 								? "Already have an account? "
 								: "Don't have an account? "}
@@ -313,8 +467,9 @@ export default function SignInPage() {
 								setStep("initial");
 								setError("");
 								setPassword("");
+								setConfirmPassword("");
 							}}
-							className="font-medium text-white hover:underline underline-offset-4"
+							className="font-medium text-black dark:text-white hover:underline underline-offset-4"
 						>
 							{step === "signup" ? "Sign in" : "Sign up"}
 						</button>
